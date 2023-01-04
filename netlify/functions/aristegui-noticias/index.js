@@ -1,27 +1,27 @@
 const { ListETL } = require("./support");
 
 exports.handler = async function (_event, _context) {
-  if (!_event.multiValueQueryStringParameters.type?.includes("list")) {
-    return {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      statusCode: 400,
-      body: "EMPTY",
-    };
+  let response, error
+
+  if (_event.multiValueQueryStringParameters.type?.includes("list")) {
+    try {
+      response = await ListETL();
+    } catch (e) {
+      error = e
+    }
   }
 
-  try {
-    const news = await ListETL();
-
+  if (response) {
     return {
       headers: {
         "Content-Type": "application/json",
       },
       statusCode: 200,
-      body: JSON.stringify(news),
+      body: JSON.stringify(response),
     };
-  } catch (error) {
+  }
+
+  if (error) {
     return {
       headers: {
         "Content-Type": "application/json",
@@ -30,4 +30,12 @@ exports.handler = async function (_event, _context) {
       body: JSON.stringify(error),
     };
   }
+
+  return {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    statusCode: 400,
+    body: "EMPTY",
+  };
 };
