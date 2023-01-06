@@ -2,7 +2,11 @@ const https = require("https");
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 
-const dynamoService = require("../../../support/dynamo-service");
+const {
+  saveNews,
+  getPendingNews,
+  saveArticle,
+} = require("../../../support/dynamo-service");
 const cert = "";
 
 const extract = async (url) => {
@@ -41,7 +45,7 @@ function transform(html, domain) {
 
         response.push({
           created,
-          status: "pending",
+          nstatus: "pending",
           url: `${domain}${url}`,
         });
       }
@@ -51,7 +55,7 @@ function transform(html, domain) {
 }
 
 const load = (news) => {
-  return dynamoService.saveNews(news);
+  return saveNews(news);
 };
 
 const ListETL = async () => {
@@ -63,9 +67,65 @@ const ListETL = async () => {
 
   await load(news);
 
-  return news
+  return news;
+};
+
+function transformArticle(html, domain, url, created) {
+  const $ = cheerio.load(html);
+  const updated = new Date().toJSON().split("T")[0];
+
+  const title = $(".titulo-principal").text();
+  const description = $("#section-main article p")
+    .toArray()
+    .map((desc) => $(desc).text().replace("\n", "").trim())
+    .filter(
+      (desc) =>
+        desc.length &&
+        !desc.includes("Te puede interesar") &&
+        !desc.includes("Te podría interesar") &&
+        !desc.includes("Con información de") &&
+        !desc.includes("Your browser doesn")
+    );
+  const image = $("#section-main figure img.full").attr("src");
+
+  const article = {
+    url,
+    description,
+    image: `${domain}${image}`,
+    title,
+    nstatus: "processed",
+    created,
+    updated,
+  };
+
+  return article;
+}
+
+const loadArticle = (article) => {
+  return saveArticle(article);
+};
+
+const ArticleETL = async () => {
+  const domain = "https://aristeguinoticias.com";
+
+  const pendingNews = await getPendingNews();
+
+  if (!Array.isArray(pendingNews.Items) || !pendingNews.Items.length) {
+    return false;
+  }
+
+  const { url, created } = pendingNews.Items[0];
+
+  const html = await extract(url);
+
+  const article = transformArticle(html, domain, url, created);
+
+  await loadArticle(article);
+
+  return article;
 };
 
 module.exports = {
   ListETL,
+  ArticleETL,
 };

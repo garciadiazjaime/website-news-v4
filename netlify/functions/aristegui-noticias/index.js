@@ -1,4 +1,4 @@
-const { ListETL } = require("./support");
+const { ListETL, ArticleETL } = require("./support");
 
 exports.handler = async function (_event, _context) {
   let response, error
@@ -6,6 +6,14 @@ exports.handler = async function (_event, _context) {
   if (_event.multiValueQueryStringParameters.type?.includes("list")) {
     try {
       response = await ListETL();
+    } catch (e) {
+      error = e
+    }
+  }
+
+  if (_event.multiValueQueryStringParameters.type?.includes("article")) {
+    try {
+      response = await ArticleETL();
     } catch (e) {
       error = e
     }
