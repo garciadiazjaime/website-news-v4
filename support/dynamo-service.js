@@ -72,8 +72,21 @@ const saveArticle = async (article) => {
   return documentClient.update(params).promise();
 };
 
+const getNews = () => {
+  const params = {
+    ExpressionAttributeValues: {
+      ":nstatus": "processed",
+    },
+    FilterExpression: "contains (nstatus, :nstatus)",
+    TableName: "news",
+  };
+
+  return documentClient.scan(params).promise();
+};
+
 module.exports = {
   saveNews,
   getPendingNews,
   saveArticle,
+  getNews,
 };

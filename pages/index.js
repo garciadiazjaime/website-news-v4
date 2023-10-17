@@ -1,7 +1,19 @@
+import { useEffect, useState } from 'react';
 import Head from 'next/head'
 import styles from '../styles/Home.module.css';
 
 export default function Home() {
+  const [news, setNews] = useState([])
+  const fetchNews = async () => {
+    const response = await fetch('./.netlify/functions/news')
+    const result = await response.json()
+    console.log('result', result)
+  }
+
+  useEffect(() => {
+    // fetchNews()
+  }, [])
+
   return (
     <div className={styles.container}>
       <Head>
